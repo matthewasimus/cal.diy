@@ -18,6 +18,23 @@ ARG CSP_POLICY
 ARG NEXT_PUBLIC_SINGLE_ORG_SLUG
 ARG ORGANIZATIONS_ENABLED
 
+## Branding (fork): BRAND selects branding/<BRAND>/ assets; NEXT_PUBLIC_* are inlined into client code
+ARG BRAND
+ARG NEXT_PUBLIC_APP_NAME
+ARG NEXT_PUBLIC_COMPANY_NAME
+ARG NEXT_PUBLIC_DISABLE_SIGNUP
+ARG NEXT_PUBLIC_GOOGLE_ONLY_LOGIN
+ARG NEXT_PUBLIC_LOGIN_BRAND_NAME
+ARG NEXT_PUBLIC_LOGIN_BRAND_LOGO
+ARG NEXT_PUBLIC_LOGIN_SUBTITLE
+ENV NEXT_PUBLIC_APP_NAME=$NEXT_PUBLIC_APP_NAME \
+  NEXT_PUBLIC_COMPANY_NAME=$NEXT_PUBLIC_COMPANY_NAME \
+  NEXT_PUBLIC_DISABLE_SIGNUP=$NEXT_PUBLIC_DISABLE_SIGNUP \
+  NEXT_PUBLIC_GOOGLE_ONLY_LOGIN=$NEXT_PUBLIC_GOOGLE_ONLY_LOGIN \
+  NEXT_PUBLIC_LOGIN_BRAND_NAME=$NEXT_PUBLIC_LOGIN_BRAND_NAME \
+  NEXT_PUBLIC_LOGIN_BRAND_LOGO=$NEXT_PUBLIC_LOGIN_BRAND_LOGO \
+  NEXT_PUBLIC_LOGIN_SUBTITLE=$NEXT_PUBLIC_LOGIN_SUBTITLE
+
 ENV NEXT_PUBLIC_WEBAPP_URL=http://NEXT_PUBLIC_WEBAPP_URL_PLACEHOLDER \
   NEXT_PUBLIC_API_V2_URL=$NEXT_PUBLIC_API_V2_URL \
   NEXT_PUBLIC_LICENSE_CONSENT=$NEXT_PUBLIC_LICENSE_CONSENT \
@@ -47,6 +64,13 @@ RUN yarn install
 RUN yarn workspace @calcom/trpc run build
 RUN yarn --cwd packages/embeds/embed-core workspace @calcom/embed-core run build
 RUN yarn --cwd apps/web workspace @calcom/web run copy-app-store-static
+# Apply brand assets (logo, favicons, app icons) over the defaults
+COPY branding ./branding
+RUN if [ -n "$BRAND" ] && [ -d "branding/$BRAND" ]; then \
+      cp -r "branding/$BRAND/public/." apps/web/public/ && \
+      cp "branding/$BRAND/app/favicon.ico" apps/web/app/favicon.ico && \
+      echo "Applied brand: $BRAND"; \
+    else echo "No brand applied"; fi
 RUN yarn --cwd apps/web workspace @calcom/web run build
 RUN rm -rf node_modules/.cache .yarn/cache apps/web/.next/cache
 

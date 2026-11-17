@@ -171,8 +171,21 @@ export default function Login({
   };
 
   const showSocialLogin = isGoogleLoginEnabled || isOutlookLoginEnabled;
+
+  // Branding (set at build time per instance)
+  const brandName = process.env.NEXT_PUBLIC_LOGIN_BRAND_NAME;
+  const brandLogo = process.env.NEXT_PUBLIC_LOGIN_BRAND_LOGO;
+  const brandSubtitle = process.env.NEXT_PUBLIC_LOGIN_SUBTITLE;
+  // Google-only login: hide the email/password form and signup link.
+  // Admin fallback: /auth/login?password=1 still shows the password form.
+  const googleOnly =
+    process.env.NEXT_PUBLIC_GOOGLE_ONLY_LOGIN === "true" && isGoogleLoginEnabled && !totpEmail;
+  const showPasswordForm = !googleOnly || twoFactorRequired || searchParams?.get("password") === "1";
+
   const showSignupLink =
-    process.env.NEXT_PUBLIC_DISABLE_SIGNUP !== "true" && searchParams?.get("register") !== "false";
+    !googleOnly &&
+    process.env.NEXT_PUBLIC_DISABLE_SIGNUP !== "true" &&
+    searchParams?.get("register") !== "false";
 
   return (
     <div className="relative flex min-h-screen items-center justify-center bg-default/80 px-4 py-10">
@@ -183,12 +196,19 @@ export default function Login({
         <div className="w-full rounded-xl border border-subtle bg-default p-10 shadow-sm">
           {/* Logo */}
           <div className="mb-2 text-center">
-            <h1 className="font-cal text-xl font-bold text-emphasis">Cal.diy</h1>
+            {brandLogo ? (
+              <div className="mx-auto mb-4 inline-flex rounded-lg bg-white px-5 py-3">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={brandLogo} alt={brandName || ""} className="h-10 w-auto" />
+              </div>
+            ) : (
+              <h1 className="font-cal text-xl font-bold text-emphasis">{brandName || "Cal.diy"}</h1>
+            )}
           </div>
 
           {/* Heading */}
           <p className="mb-8 text-center text-sm text-subtle" data-testid="login-subtitle">
-            {twoFactorRequired ? t("2fa_code") : t("welcome_back_sign_in")}
+            {twoFactorRequired ? t("2fa_code") : brandSubtitle || t("welcome_back_sign_in")}
           </p>
 
           <FormProvider {...methods}>
@@ -233,14 +253,17 @@ export default function Login({
                 </div>
 
                 {/* Divider */}
-                <div className="my-6 flex items-center gap-4">
-                  <Separator className="flex-1" />
-                  <span className="text-sm text-zinc-400">{t("or").toLowerCase()}</span>
-                  <Separator className="flex-1" />
-                </div>
+                {showPasswordForm && (
+                  <div className="my-6 flex items-center gap-4">
+                    <Separator className="flex-1" />
+                    <span className="text-sm text-zinc-400">{t("or").toLowerCase()}</span>
+                    <Separator className="flex-1" />
+                  </div>
+                )}
               </>
             )}
 
+            {showPasswordForm && (
             <form onSubmit={methods.handleSubmit(onSubmit)} noValidate data-testid="login-form">
               <input defaultValue={csrfToken || undefined} type="hidden" hidden {...register("csrfToken")} />
 
@@ -317,6 +340,7 @@ export default function Login({
                 {twoFactorRequired ? t("submit") : t("continue")}
               </Button>
             </form>
+            )}
 
             {/* Two Factor Footer */}
             {twoFactorRequired && (
