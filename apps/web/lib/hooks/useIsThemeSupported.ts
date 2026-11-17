@@ -2,7 +2,14 @@
 
 import { usePathname } from "next/navigation";
 
-const THEME_UNSUPPORTED_ROUTES = ["/auth/setup"];
+// Fork: sign-in related pages are always light, regardless of device theme
+const THEME_UNSUPPORTED_ROUTES = [
+  "/auth/setup",
+  "/auth/login",
+  "/auth/logout",
+  "/auth/error",
+  "/auth/forgot-password",
+];
 
 export default function useIsThemeSupported(): boolean {
   const pathname = usePathname();
